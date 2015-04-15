@@ -1,0 +1,14 @@
+*.toc
+*.blg
+*.gz
+*.bbl
+*.log
+*.nav
+*.aux
+**/auto/*
+*.snm
+*.run.xml
+*.out
+*.bcf
+*.vrb
+latex-src/**/*.pdf

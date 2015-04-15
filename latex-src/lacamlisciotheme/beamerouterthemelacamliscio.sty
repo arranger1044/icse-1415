@@ -1,0 +1,86 @@
+\ProvidesPackage{beamerouterthemelacamliscio}[2014/12/09]
+\mode<presentation>
+
+\useoutertheme[subsection=false, footline=authorinstitutetitle, compress]{miniframes}
+
+\addtobeamertemplate{headline}{\vspace{7pt}\hspace{10pt}}{\hspace{10pt}}
+
+% Frame title
+\defbeamertemplate*{frametitle}{lacamliscio}[1][]
+{
+  \vskip25pt%
+  % \begin{beamercolorbox}[wd=\paperwidth,ht=1.2cm]{frametitle} 
+  %   \begin{tikzpicture}
+  %     \useasboundingbox[fill=white](0,0) rectangle(\the\paperwidth,1.2);
+  %     \fill[orange] (0,0) rectangle(2.95,1.2);
+  %     \fill[blue!50!cyan!80] (3.05,0) rectangle(\the\paperwidth,1.2);
+  %     \ifx\insertframesubtitle\@empty%
+  %     {\node[anchor=west, white,font=\large] at (3.2,0.61){\insertframetitle};}
+  %     \else%
+  %     {\node[anchor= west, white,font=\large] at (3.2,0.81){\insertframetitle};%
+  %       \node[anchor= west, white,font=\small] at (3.2,0.41){\insertframesubtitle};}%
+  %     \fi
+  %   \end{tikzpicture}
+  % \end{beamercolorbox}
+  \insertframetitle\par
+  \ifdefined\insertframesubtitle
+  \usebeamerfont{framesubtitle}\insertframesubtitle
+  \fi
+}
+
+\defbeamertemplate*{footline}{lacamliscio}[1][]
+
+{
+  % \hspace{20pt}
+  % \tiny
+  % % \begin{minipage}[t]{50pt}
+  % %   \vspace{10pt}
+  % %   Antonio Vergari
+  % % \end{minipage}
+  % \begin{minipage}[t]{65pt}
+  %   \vspace{5pt}
+  %   \includegraphics[width=22pt]{Figures/unibaba}
+  %   \hspace{4pt}
+  %   \includegraphics[width=31pt]{Figures/lacam}
+  % \end{minipage}
+  % \ifsansserif
+  % \hspace{32pt}% for theinhardt
+  % \else
+  % \hspace{37pt}%fot guardian
+  % \fi
+  % \begin{minipage}[t]{80pt}
+  %   \vspace{10pt}
+  %   \textbf{Università degli Studi di Bari}\par
+  %   \vspace{3pt}
+  %   Dipartimento di Informatica
+  % \end{minipage}
+  % \ifsansserif
+  % \hspace{14pt}%for theinhardt
+  % \else
+  % \hspace{20pt}%for guardian
+  % \fi
+  % \begin{minipage}[t]{60pt}
+  %   \vspace{10pt}
+  %   \textbf{Laboratorio LACAM}\par
+  %   \vspace{3pt}
+  %   Machine Learning
+  % \end{minipage}
+  % \hspace{28pt}
+  % \vspace{7pt}
+}
+
+% \addtobeamertemplate{footline}{}{\vspace{7pt}}
+
+
+
+% \defbeamertemplate*{footnotetext}{default}{%
+%   % \parindent 1em\noindent%
+%   \raggedright
+%   \tiny
+%   % \hbox to 1.8em{\hfil\insertfootnotemark}%
+%   \insertfootnotetext\par}
+
+% \addtobeamertemplate{footnotetext}{\vspace{-6pt}\advance\hsize-1.5cm}{\vspace{6pt}}
+
+
+\mode<all>
