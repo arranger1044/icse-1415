@@ -226,14 +226,8 @@
         (parent ?grandparent ?father) (parent ?grandparent ?uncle)
         (parent ?father ?child) (male ?uncle)
         (test (neq ?uncle ?father)) ;; a test predicate pattern
-        (defrule hipster-movies-or
-  ""
-  (or (movie (title ?title) (genre indie))
-      (movie (title ?title) (genre surreal)))
-  
-  =>
-  (printout t "Probably an hipster movie (OR): " ?title crlf))=>
-        (assert (uncle ?uncle ?child)))
+        =>
+        (assert (uncle ?child2 ?child)))
   \end{clips-code}
 
   How to retrieve movies where the director is also the main actor and producer:
@@ -256,7 +250,7 @@
   \begin{clips-code}[numbers=none]
     (defrule hipster-movies-or
         (or (movie (title ?title) (genre indie))
-        (movie (title ?title) (genre surreal)))
+            (movie (title ?title) (genre surreal)))
         =>
         (printout t "Probably an hipster movie (OR): " ?title crlf))
   \end{clips-code}
