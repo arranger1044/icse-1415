@@ -385,6 +385,109 @@ have to introduce meta-rules\dots\par\bigskip
       
 \end{frame}
 
+\begin{frame}[fragile]
+  \frametitle{8-Puzzle: a possible solution I}
+  A very simple (and verbose) representation for states as facts:
+  \begin{clips-code}[numbers=none]
+    (deftemplate 8-puzzle
+        (slot one (type INTEGER) (default ?NONE))
+        (slot two (type INTEGER) (default ?NONE))
+        (slot three (type INTEGER) (default ?NONE))
+        (slot four (type INTEGER) (default ?NONE))
+        (slot five (type INTEGER) (default ?NONE))
+        (slot six (type INTEGER) (default ?NONE))
+        (slot seven (type INTEGER) (default ?NONE))
+        (slot eight (type INTEGER) (default ?NONE))
+        (slot nine (type INTEGER) (default ?NONE)))
+
+    (deftemplate move
+        (slot parent (type FACT-ADDRESS) (default ?NONE))
+        (slot next (type FACT-ADDRESS) (default ?NONE)))
+ 
+    (deffacts initial-board
+        (8-puzzle (one 1) (two 2) (three 3) (four 4) (five -1) (six 6)
+                  (seven 7) (eight 5) (nine 8)))
+  \end{clips-code}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{8-Puzzle: a possible solution II}
+  An equally simple (and verbose) formulation for the rules:
+  \begin{clips-code}[numbers=none]
+    (defrule from-one-to-two
+        ?s <-(8-puzzle (one -1) (two ?T) (three ?H) 
+                       (four ?F) (five ?I) (six ?S) 
+                       (seven ?E) (eight ?G) (nine ?N))
+        (not (8-puzzle (one ?T) (two -1) (three ?H)
+                       (four ?F) (five ?I)  (six ?S) 
+                       (seven ?E) (eight ?G) (nine ?N)))
+        =>
+        (bind ?n (assert (8-puzzle (one ?T) (two -1) (three ?H)
+                                   (four ?F) (five ?I) (six ?S) 
+                                   (seven ?E) (eight ?G) (nine ?N))))
+        (print-boards ?s ?n)
+        (printout t "Moved from one to two" crlf)
+        (assert (move (parent ?s) (next ?n)))
+        (yes-or-no-halt))
+      \end{clips-code}
+
+  The check to not activate a rule leading to an already seen
+  configuration is embedded as a \textsf{not} CE in the LHS.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{8-Puzzle: a possible solution III}
+  To detect if we have reached a final configuration, we can employ a
+  fixed LHS rule:
+  \begin{clips-code}[numbers=none]
+    (defrule found-solution
+        (declare (salience ?*highest-priority*))
+        ?s <- (8-puzzle (one 1) (two 2) (three 3)
+                        (four 4) (five 5) (six 6) 
+                        (seven 7) (eight 8) (nine -1))
+        (move (parent ?p) (next ?s))
+        =>
+        (print-boards ?s ?s)
+        (assert (moves ?p ?s))
+        (printout t "FOUND solution" crlf))
+      \end{clips-code}
+
+   While, to govern the search strategy we have to set the conflict
+   resolution strategy in CLIPS, which can be done in a batch file:
+   \begin{clips-code}[numbers=none]
+     (clear)
+     (set-strategy breadth)
+     (load 8_puzzle.clp)
+     (reset)
+     (run)
+ \end{clips-code}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{8-Puzzle: a possible solution IV}
+  To retrieve the path leading to the final correct configuration, we
+  can use also other rules, collecting back the \textsf{move} facts a create a
+  multifield \textsf{moves} fact which (we can print at the end).
+  \begin{clips-code}[numbers=none]
+    (defrule get-solution-path
+        (declare (salience ?*highest-priority*))
+        ?m <- (moves ?last-move $?other-moves)
+        ?k <- (move (parent ?previous) (next ?last-move))
+        =>
+        (retract ?m ?k)
+        (assert (moves ?previous ?last-move $?other-moves)))
+
+    (defrule print-solution-path
+        (declare (salience ?*highest-priority*))
+        ?m <- (moves ?last-move $?other-moves)
+        (not (move (parent ?previous) (next ?last-move))) ;; this is the root
+        =>
+        (printout t "Found a solution" crlf)
+        (print-board-moves ?m)
+        (halt))
+  \end{clips-code}
+\end{frame}
+
 \begin{frame}
   \frametitle{Pros\&Cons}
   What \textbf{\emph{we gain for free}} is CLIPS inference routines and constructs,
@@ -406,9 +509,233 @@ have to introduce meta-rules\dots\par\bigskip
 \end{frame}
 
 \begin{frame}
-  \frametitle{Cannibals and Missionaries}
-  
+  \frametitle{Cannibals and Missionaries (CaM)}
+  We have an initial equal number $N$ of cannibals and missionaries on one
+  shore of a river. There is one boat that can transport at most
+  $k$ people at a time from one side to the other. We start with $2N$
+  people on one shore and we have to move all to the other. considering that, at each time,
+  on both shore and on the boat, the number of missionaries shall be
+  equal or greater than that of cannibals.\par
+  Supposing $N=3$ and $k=2$ a possible state search space is:\par\bigskip
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{Figures/cam}
+  \end{center}
+
 \end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{CaM: State formulation I}
+  To be able to govern more the search, we need to embed in the state
+  conceptualization some references to the current search advancement
+  (e.g. depth, references to the parent state,\dots)\footnote{This
+  code is taken from Giarratano's and Riley's book}: 
+  \begin{clips-code}[numbers=none]
+    (deftemplate MAIN::status 
+        (slot search-depth (type INTEGER) (range 1 ?VARIABLE))
+        (slot parent (type FACT-ADDRESS SYMBOL) (allowed-symbols no-parent))
+        (slot shore-1-missionaries (type INTEGER) (range 0 ?VARIABLE))
+        (slot shore-1-cannibals (type INTEGER) (range 0 ?VARIABLE))
+        (slot shore-2-missionaries (type INTEGER) (range 0 ?VARIABLE))
+        (slot shore-2-cannibals (type INTEGER) (range 0 ?VARIABLE))
+        (slot boat-location (type SYMBOL) (allowed-values shore-1 shore-2))
+        (slot last-move (type STRING)))   
+  \end{clips-code}
+  as well as taking into account the boat position and number of
+  missionaries and cannibals on both shores.
+      
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Modular Programming}
+  In CLIPS it is possible to define different modules, each one with
+  its deftemplated facts, rules, function, global variables (everything that can be
+  build with a \textsf{def} construct).\par
+  To define a module, use the construct \textsf{defmodule}.\par
+  To specify the name of a module as a \textbf{\emph{namespace}}, one shall use the scope
+  operator \textsf{::} (like in C++)\par\bigskip
+  One module can import from others the constructs it needs to
+  operate. Image we use a MAIN module to represent the state and the
+  rules to operate on them, we could use a CONSTRAINT module for rules
+  checking illegal states and a module SOLUTION for getting the path
+  from the root of the search tree to the final configuration
+  state. To import the \textsf{status} template in the CONSTRAINT
+  module we could write:
+  \begin{clips-code}[numbers=none]
+    (defmodule CONSTRAINTS 
+       (import MAIN deftemplate status))
+  \end{clips-code}
+
+  The switch among modules can be governed by the \textsf{focus}
+  property (see rules later).
+  \begin{clips-code}[numbers=none]
+    
+  \end{clips-code}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Focus-Stack}
+  In order to manage the modules of a program CLIPS maintains a stack
+  of module references, the \textsf{focus-stack}. The module at the top of the
+  focus-stack is active; all the others are dormant.\par
+  The rules in a module can contain actions that modify the contents of the
+  focus-stack and thus force the activation of other
+  modules.\par\bigskip
+
+  If the rule of a module is declared auto-focus, by using the special
+  pattern
+  \begin{clips-code}[numbers=none]
+    (declare (auto-focus TRUE))
+  \end{clips-code}
+  then the module will be automatically activated and inserted at the top of the
+  \textsf{focus-stack} when the rule becomes instantiated.\par
+  Note that this creates an effect similar to that of putting a very
+  high priority on that rule.\par\bigskip
+
+  This way not only we can \emph{divide} rules into modules (doing different
+  tasks), but we can also \emph{govern} their activation (by determining
+  their modules activation).
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{CaM: State formulation II}
+  We can represent the initial status as shown in the previous image
+  with a \textsf{deffacts} construct.
+  \begin{clips-code}[numbers=none]
+    (deffacts MAIN::initial-positions
+         (status (search-depth 1) 
+                 (parent no-parent)
+                 (shore-1-missionaries 3)
+                 (shore-2-missionaries 0)
+                 (shore-1-cannibals 3)
+                 (shore-2-cannibals 0)
+                 (boat-location shore-1)
+                 (last-move "No move.")))
+
+    (deffacts boat-information
+        (boat-can-hold 2))
+  \end{clips-code}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{CaM: Generate \& Test I}
+  To search the state space we can adopt a \textbf{\emph{generate \&
+      test}} approach: that is, we generate (assert) all the possible
+  \emph{syntactical} states by moving one or more cannibals and/or
+  missionaries from one shore to the other. After the states have been
+  generated, we can use other rules to prune (retract) those that are
+  illegal, for instance statuses where the number of cannibals exceeds
+  that of missionaries:
+  \begin{clips-code}[numbers=none]
+    (defrule CONSTRAINTS::cannibals-eat-missionaries
+         (declare (auto-focus TRUE))
+         ?node <- (status (shore-1-missionaries ?s1m)
+         (shore-1-cannibals ?s1c)
+         (shore-2-missionaries ?s2m)
+         (shore-2-cannibals ?s2c))
+         (test (or (and (> ?s2c ?s2m) (<> ?s2m 0))
+                   (and (> ?s1c ?s1m) (<> ?s1m 0))))
+         =>
+         (retract ?node))
+  \end{clips-code}
+  The property \textsf{auto-focus} tells CLIPS to apply inference in
+  the referenced module as soon as it is possible to do so. In this
+  case if this rule gets activated by a status, than the focus of
+  execution will switch to the CONSTRAINTS module.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{CaM: Generate \& Test II}
+  To generate all the states we can use just two rules that, for each
+  shore, will calculate all the possible movements. (See the attached
+  script for the full code)
+  \begin{clips-code}[numbers=none]
+    (defrule shore-1-move 
+        ?node <- (status (search-depth ?num) 
+                         (boat-location shore-1)
+                         (shore-1-missionaries ?s1m)
+                         (shore-1-cannibals ?s1c)
+                         (shore-2-missionaries ?s2m)
+                         (shore-2-cannibals ?s2c))
+                         (boat-can-hold ?limit)
+        =>
+        (bind ?max-missionaries (min ?s1m ?limit))
+        (loop-for-count (?missionaries 0 ?max-missionaries)
+                        ...
+                        (loop-for-count (?cannibals ?min-cannibals ?max-cannibals)
+                                        (duplicate ?node (search-depth =(+ 1 ?num))
+                                                         (parent ?node)
+                                                         ...))))
+  \end{clips-code}
+\end{frame}
+
+\begin{frame}
+  \frametitle{CaM: exercise}
+  Given the incomplete script for this problem, complete the
+  CONSTRAINTS module by implementing the following rules:
+  \begin{itemize}
+  \item A rule to consider illegal all the states that have been
+    generated over a certain depth limit
+  \item A rule to check whether a state has already been visited
+    before (hint, given this formulation, such a state would have all
+    attributes equal to an already asserted state, for the exception of...)
+  \end{itemize}\bigskip
+ Implement a SOLUTIONS module that, like in the icterus case, is able
+ to retrieve the paths from the root to a solution (final
+ state). Hint: let the last slot of a status be its printed proxy.\par
+ Keep in mind to import all the constructs that you need from other modules.\par\bigskip
+
+ Extend the module to find all the possible solutions.
+\end{frame}
+% \begin{frame}[fragile]
+%   \frametitle{State formulation}
+%   % To be able to govern more the search, we need to embed in the state
+%   % conceptualization some references to the current search advancement
+%   % (e.g. depth, references to the parent state,\dots)\footnote{This
+%   %   code is taken from Giarratano\'s and Riley\'s book}:
+%   % \begin{clips-code}
+%   %   (deftemplate MAIN::status 
+%   %       (slot search-depth (type INTEGER) (range 1 ?VARIABLE))
+%   %       (slot parent (type FACT-ADDRESS SYMBOL) (allowed-symbols no-parent))
+%   %       (slot shore-1-missionaries (type INTEGER) (range 0 ?VARIABLE))
+%   %       (slot shore-1-cannibals (type INTEGER) (range 0 ?VARIABLE))
+%   %       (slot shore-2-missionaries (type INTEGER) (range 0 ?VARIABLE))
+%   %       (slot shore-2-cannibals (type INTEGER) (range 0 ?VARIABLE))
+%   %       (slot boat-location (type SYMBOL) (allowed-values shore-1 shore-2))
+%   %       (slot last-move (type STRING)))
+%   %     \end{clips-code}
+%    as well as taking into account the boat position and number of
+%    missionaries and cannibals on both shores.   
+%  \end{frame}
+
+ 
+ % \begin{frame}[fragile]
+ %   \frametitle{Rules to generate states}
+ %   \begin{clips-code}[numbers=none]
+ %     (defrule MAIN::shore-1-move 
+ %         ?node <- (status (search-depth ?num) 
+ %                          (boat-location shore-1)
+ %                          (shore-1-missionaries ?s1m)
+ %                          (shore-1-cannibals ?s1c)
+ %                          (shore-2-missionaries ?s2m)
+ %                          (shore-2-cannibals ?s2c))
+ %         (boat-can-hold ?limit)
+ %         =>
+ %         (bind ?max-missionaries (min ?s1m ?limit))
+ %         (loop-for-count (?missionaries 0 ?max-missionaries)
+ %         (bind ?min-cannibals (max 0 (- 1 ?missionaries)))
+ %         (bind ?max-cannibals (min ?s1c (- ?limit ?missionaries)))
+ %         (loop-for-count (?cannibals ?min-cannibals ?max-cannibals)
+ %             (duplicate ?node (search-depth =(+ 1 ?num))
+ %                                             (parent ?node)
+ %                                             (shore-1-missionaries (- ?s1m ?missionaries))
+ %                                             (shore-1-cannibals (- ?s1c ?cannibals))
+ %                                             (shore-2-missionaries (+ ?s2m ?missionaries))
+ %                                             (shore-2-cannibals (+ ?s2c ?cannibals))
+ %                                             (boat-location shore-2)
+ %                                             (last-move (move-string ?missionaries ?cannibals shore-2))))))
+ %   \end{clips-code}
+ % \end{frame}
+
 
 \end{document}
 
