@@ -1,0 +1,104 @@
+CLIPS> (reset)
+CLIPS> (facts)
+f-0     (initial-fact)
+f-1     (rule (if main-course is red-meat) (then best-color is red))
+f-2     (rule (if main-course is fish) (then best-color is white))
+f-3     (rule (if main-course is poultry and meal-is-turkey is yes) (then best-color is red))
+f-4     (rule (if main-course is poultry and meal-is-turkey is no) (then best-color is white))
+f-5     (goal (attribute best-color))
+For a total of 6 facts.
+CLIPS> (agenda)
+0      start-BC: f-0
+For a total of 1 activation.
+CLIPS> (run 1)
+CLIPS> (agenda)
+0      attempt-rule: f-5,f-4,,
+0      attempt-rule: f-5,f-3,,
+0      attempt-rule: f-5,f-2,,
+0      attempt-rule: f-5,f-1,,
+For a total of 4 activations.
+CLIPS> (watch rules)
+CLIPS> (watch facts)
+CLIPS> (run 1)
+FIRE    1 attempt-rule: f-5,f-4,,
+==> f-6     (goal (attribute main-course))
+CLIPS> (agenda)
+0      ask-attribute-value: f-6,,
+For a total of 1 activation.
+CLIPS> (run 1)
+FIRE    1 ask-attribute-value: f-6,,
+<== f-6     (goal (attribute main-course))
+What is the value of main-course? poultry
+==> f-7     (attribute (name main-course) (value poultry))
+CLIPS> (agenda)
+100    remove-rule-no-match: f-5,f-7,f-2
+100    remove-rule-no-match: f-5,f-7,f-1
+100    modify-rule-match: f-5,f-7,f-4
+100    modify-rule-match: f-5,f-7,f-3
+For a total of 4 activations.
+CLIPS> (run 2)
+FIRE    1 remove-rule-no-match: f-5,f-7,f-2
+<== f-2     (rule (if main-course is fish) (then best-color is white))
+FIRE    2 remove-rule-no-match: f-5,f-7,f-1
+<== f-1     (rule (if main-course is red-meat) (then best-color is red))
+CLIPS> (agenda)
+100    modify-rule-match: f-5,f-7,f-4
+100    modify-rule-match: f-5,f-7,f-3
+For a total of 2 activations.
+CLIPS> (run 2)
+FIRE    1 modify-rule-match: f-5,f-7,f-4
+<== f-4     (rule (if main-course is poultry and meal-is-turkey is no) (then best-color is white))
+==> f-8     (rule (if meal-is-turkey is no) (then best-color is white))
+FIRE    2 modify-rule-match: f-5,f-7,f-3
+<== f-3     (rule (if main-course is poultry and meal-is-turkey is yes) (then best-color is red))
+==> f-9     (rule (if meal-is-turkey is yes) (then best-color is red))
+CLIPS> (agenda)
+0      attempt-rule: f-5,f-9,,
+0      attempt-rule: f-5,f-8,,
+For a total of 2 activations.
+CLIPS> (run 1)
+FIRE    1 attempt-rule: f-5,f-9,,
+==> f-10    (goal (attribute meal-is-turkey))
+CLIPS> (agenda)
+0      ask-attribute-value: f-10,,
+For a total of 1 activation.
+CLIPS> (run 1)
+FIRE    1 ask-attribute-value: f-10,,
+<== f-10    (goal (attribute meal-is-turkey))
+What is the value of meal-is-turkey? yes
+==> f-11    (attribute (name meal-is-turkey) (value yes))
+CLIPS> (agenda)
+100    rule-satisfied: f-5,f-11,f-9
+100    remove-rule-no-match: f-5,f-11,f-8
+For a total of 2 activations.
+CLIPS> (run)
+FIRE    1 rule-satisfied: f-5,f-11,f-9
+<== f-9     (rule (if meal-is-turkey is yes) (then best-color is red))
+==> f-12    (attribute (name best-color) (value red))
+FIRE    2 goal-satisfied: f-5,f-12
+<== f-5     (goal (attribute best-color))
+CLIPS> (agenda)
+CLIPS> (facts)
+f-0     (initial-fact)
+f-8     (rule (if meal-is-turkey is no) (then best-color is white))
+For a total of 2 facts.
+CLIPS> (facts)
+f-0     (initial-fact)
+f-8     (rule (if meal-is-turkey is no) (then best-color is white))
+For a total of 2 facts.
+CLIPS> (facts BC)
+f-7     (attribute (name main-course) (value poultry))
+f-8     (rule (if meal-is-turkey is no) (then best-color is white))
+f-11    (attribute (name meal-is-turkey) (value yes))
+f-12    (attribute (name best-color) (value red))
+For a total of 4 facts.
+CLIPS> (facts ALL)
+[PRNTUTIL1] Unable to find defmodule ALL.
+CLIPS> (facts *)
+f-0     (initial-fact)
+f-7     (attribute (name main-course) (value poultry))
+f-8     (rule (if meal-is-turkey is no) (then best-color is white))
+f-11    (attribute (name meal-is-turkey) (value yes))
+f-12    (attribute (name best-color) (value red))
+For a total of 5 facts.
+CLIPS> 
